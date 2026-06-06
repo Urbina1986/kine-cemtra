@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Beatriz Rebolledo — CEMTRA</title>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#1c2a3a;--muted:#64748b;--line:#e3e8ef;--teal:#0f8b8d;--teal-d:#0a6b6d;--blue:#2c6ecb;--amber:#e0a008;--red:#d6453d;--green:#2e9e6b;--shadow:0 1px 3px rgba(16,32,53,.06),0 6px 20px rgba(16,32,53,.05);}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+header.top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;border-bottom:2px solid var(--teal);padding-bottom:14px;margin-bottom:18px}
+header.top h1{font-size:21px;margin:0 0 3px}header.top .sub{color:var(--muted);font-size:13px}
+.ctrls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ctrls label{font-size:12px;color:var(--muted);font-weight:600}
+select{font-family:inherit;font-size:14px;font-weight:600;color:var(--ink);background:#fff;border:1.5px solid var(--teal);border-radius:9px;padding:7px 11px;cursor:pointer}
+button.rf{font-family:inherit;font-size:12.5px;font-weight:600;color:#fff;background:var(--teal);border:none;border-radius:9px;padding:8px 13px;cursor:pointer}
+button.rf:hover{background:var(--teal-d)}
+.status{font-size:11.5px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px;box-shadow:var(--shadow)}
+.kpi .v{font-size:23px;font-weight:700;letter-spacing:-.5px;line-height:1.1}.kpi .l{font-size:10.5px;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.3px;font-weight:600}.kpi .h{font-size:10px;color:var(--muted);margin-top:2px}
+.kpi.accent{background:linear-gradient(135deg,var(--teal),var(--teal-d));border:none;color:#fff}.kpi.accent .l,.kpi.accent .h{color:rgba(255,255,255,.85)}
+.kpi.accent2{background:linear-gradient(135deg,#2c6ecb,#1b4a8f);border:none;color:#fff}.kpi.accent2 .l,.kpi.accent2 .h{color:rgba(255,255,255,.85)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px 18px;box-shadow:var(--shadow)}
+.card h2{font-size:14.5px;margin:0 0 2px}.card .desc{font-size:12px;color:var(--muted);margin:0 0 14px}.full{grid-column:1/-1}
+table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{padding:7px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);font-weight:700}th.num,td.num{text-align:right}td.name{font-weight:600}tr:hover td{background:#f8fafc}
+.pill{display:inline-block;min-width:48px;text-align:center;padding:3px 7px;border-radius:7px;font-weight:600;font-size:12px}
+.g{background:#e4f5ec;color:var(--green)}.a{background:#fcf3da;color:#9a6c04}.r{background:#fbe6e4;color:var(--red)}.n{background:#eef2f7;color:var(--muted)}
+.bars{display:flex;flex-direction:column;gap:7px}.barrow{display:grid;align-items:center;gap:9px;font-size:12px}.barrow .nm{overflow:hidden;text-overflow:ellipsis}
+.track{background:#eef2f7;border-radius:6px;height:15px;overflow:hidden}.fill{height:100%;border-radius:6px}.barrow .val{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+svg{display:block;width:100%;height:auto}.qnote{font-size:11px;color:var(--muted);margin-top:8px}
+.leg{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;margin-top:6px}.leg span{display:flex;align-items:center;gap:6px}.dot{width:11px;height:11px;border-radius:3px}
+.note{font-size:12px;color:var(--muted);background:#f8fafc;border-left:3px solid var(--teal);padding:10px 13px;border-radius:0 8px 8px 0;margin-top:6px}
+.note.warn{border-left-color:var(--red);background:#fff8f5}
+footer{margin-top:22px;font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+#err{display:none;background:#fbe6e4;color:#7a241f;border:1px solid #f0b8b3;border-radius:10px;padding:14px 16px;font-size:13px;margin-bottom:18px}
+.loading{text-align:center;color:var(--muted);padding:50px 0;font-size:14px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #cbd5e1;border-top-color:var(--teal);border-radius:50%;animation:s .8s linear infinite;vertical-align:-3px;margin-right:7px}
+@keyframes s{to{transform:rotate(360deg)}}
+.stat-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-start}
+.stat-box{text-align:center}.stat-box .sv{font-size:22px;font-weight:700}.stat-box .sl{font-size:10.5px;color:var(--muted);line-height:1.3}
+.riesgo-box{background:#fff0f0;padding:6px 14px;border-radius:8px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:560px){.kpis{grid-template-columns:repeat(2,1fr)}}
+</style></head><body><div class="wrap">
+<header class="top">
+  <div><h1 id="hdr-title">Dashboard Personal — Kinesiología CEMTRA</h1><div class="sub" id="hdr-sub">Kinesiología CEMTRA</div></div>
+  <div class="ctrls">
+    <select id="ksel" style="display:none"><option value="">Cargando…</option></select>
+    <label for="ysel">Año</label><select id="ysel"><option value="TOTAL">Todos</option></select>
+    <label for="msel">Mes</label><select id="msel"><option value="TOTAL">Todos los meses</option></select>
+    <label for="gday">Día</label><select id="gday"><option value="TOTAL">Todos los días</option></select>
+    <button class="rf" id="refresh">↻ Actualizar</button>
+    <span class="status" id="status"></span>
+  </div>
+</header>
+<div id="err"></div>
+<div id="content"><div class="loading"><span class="spin"></span>Cargando datos desde Google Sheets…</div></div>
+<footer id="foot"></footer>
+</div>
+<script>
+"use strict";
+/* ============================ CONFIG ============================ */
+const CONFIG = {
+  CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTj5Vj-GK1tc_d6cJF8J7Mqlzp7DBwvDvow0cH6Zkz_9kcnMhLig6rhnS50hdi9F8OEAKwLA1htOeBR/pub?output=csv",
+  PROD_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTFl-KydR95XEoEc3sSPLh9N9Jnz1SMMp43n75ad0lvQvixYX6zDNHeDEsm5ePHlH_lVYos2x20Byvr/pub?output=csv",
+  REFRESH_MIN: 15,
+  DATE_DAYFIRST: true,
+  DEFAULT_KINE: "Beatriz Rebolledo"
+};
+/* Horarios y capacidad declarada por kinesiólogo */
+const SCHED = {
+ 'Raul Carrasco':{h:[['10:30','19:30'],['08:30','16:00'],['10:30','19:30'],['08:30','16:00'],['10:30','17:00'],null],lunch:[1,1,1,1,1,0],cap:[30,30,30,26,22,0]},
+ 'Raimundo Mendoza':{h:[['10:30','18:50'],['08:30','16:50'],['10:30','18:50'],['08:30','16:50'],['11:30','17:50'],null],lunch:[1,1,1,1,1,0],cap:[21,21,21,18,15,0]},
+ 'Beatriz Rebolledo':{h:[['09:10','17:30'],['09:10','17:30'],['09:10','17:30'],['09:10','17:30'],['09:10','16:30'],null],lunch:[1,1,1,1,1,0],cap:[21,21,21,21,18,0]},
+ 'Josefina Cordova':{h:[['10:30','18:50'],['10:30','17:50'],['10:30','18:50'],['10:30','17:50'],['10:30','17:50'],['09:10','11:50']],lunch:[1,1,1,1,1,1],cap:[21,18,21,18,18,9]},
+ 'Cristobal Castillo':{h:[['14:00','19:40'],['11:00','19:40'],['14:00','19:40'],['11:00','19:40'],['14:00','19:40'],['09:00','12:00']],lunch:[0,1,0,1,0,0],cap:[18,22,18,22,18,10]},
+ 'Esthefania Faundez':{h:[['08:30','16:50'],['14:10','19:50'],['08:30','16:50'],['14:10','19:50'],['08:30','15:50'],null],lunch:[0,1,0,1,0,0],cap:[21,18,21,18,18,0]},
+ 'Benjamin Gonzalez':{h:[['16:30','19:30'],['14:00','19:30'],['16:30','19:30'],['14:00','19:30'],['14:00','19:30'],['09:00','12:00']],lunch:[0,0,0,0,0,0],cap:[14,24,14,24,14,14]},
+ 'Nicolas Parra':{h:[['16:00','19:30'],['16:00','19:30'],['16:00','19:30'],['16:00','19:30'],['16:00','19:30'],['09:00','12:00']],lunch:[0,0,0,0,0,0],cap:[16,16,16,16,16,14]},
+ 'Camila Thumm':{h:[['08:50','12:30'],['08:50','12:30'],['08:50','12:30'],['08:50','12:30'],['08:50','12:30'],null],lunch:[0,0,0,0,0,0],cap:[12,12,12,12,12,0]},
+ 'Claudia Morales':{h:[['09:00','12:20'],['09:00','12:20'],['09:00','12:20'],['09:00','12:20'],['09:00','12:20'],null],lunch:[0,0,0,0,0,0],cap:[11,11,11,11,11,0]},
+ 'Camila Vergara':{h:[['08:30','16:50'],['10:30','18:50'],['08:30','16:50'],['10:30','18:50'],['08:30','14:10'],null],lunch:[0,0,0,0,0,0],cap:[21,21,21,21,13,0]},
+ 'Marisela Garrido':{h:[null,null,null,null,null,['09:00','12:00']],lunch:[0,0,0,0,0,0],cap:[0,0,0,0,0,7]}
+};
+const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const DIDX={'Lunes':0,'Martes':1,'Miércoles':2,'Jueves':3,'Viernes':4,'Sábado':5,'Domingo':6};
+const N3=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const LS=13*60, LE=14*60+30, LD=90;
+const CURRENT_YM=new Date().toISOString().slice(0,7);
+const PEND_ATEND=['ATENCIÓN','VALIDADO','ASIGNADO'];
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString('es-CL');
+function mesLabel(m){if(m==='TOTAL')return 'Año completo';const p=m.split('-');return N3[+p[1]]+' '+p[0];}
+function hm(t){const p=t.split(':');return(+p[0])*60+(+p[1]);}
+function dcap(kn,wd){return SCHED[kn]?SCHED[kn].cap[wd]:0;}
+function dayHours(kn,wd){const s=SCHED[kn];if(!s||!s.h[wd])return 0;const a=hm(s.h[wd][0]),b=hm(s.h[wd][1]);let d=b-a;if(s.lunch[wd]&&a<=LS&&b>=LE)d-=LD;return d/60;}
+function isKine(s){const u=(s||'').toUpperCase();return u.indexOf('KLGO.')===0||u.indexOf('KLGA.')===0||u.indexOf('SALA KLGO')===0||u.indexOf('SALA KLGA')===0;}
+function isDoc(s){const u=(s||'').toUpperCase();return(u.indexOf('DR.')===0||u.indexOf('DRA.')===0)&&u.indexOf('ECO')<0&&u.indexOf('ADMINISTRATIVO')<0&&u.indexOf('REVISION')<0;}
+function kineName(s){return(s||'').replace('SALA','').replace('KLGA.','').replace('KLGO.','').replace('- KINESIOLOGIA','').replace('NORAMBUENA','').trim().toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());}
+function pretty(k){const M={'Raul Carrasco':'Raúl Carrasco','Raimundo Mendoza':'Raimundo Mendoza','Beatriz Rebolledo':'Beatriz Rebolledo','Josefina Cordova':'Josefina Córdova','Cristobal Castillo':'Cristóbal Castillo','Esthefania Faundez':'Esthefanía Faúndez','Benjamin Gonzalez':'Benjamín González','Nicolas Parra':'Nicolás Parra','Camila Thumm':'Camila Thumm','Claudia Morales':'Claudia Morales','Camila Vergara':'Camila Vergara','Marisela Garrido':'Marisela Garrido'};return M[k]||k;}
+function tc(s){return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());}
+function parseFecha(s){if(!s)return null;s=String(s).trim().split(' ')[0];const p=s.split(/[\/\-.]/).map(x=>parseInt(x,10));if(p.length<3||p.some(isNaN))return null;let y,m,d;if(p[0]>31){y=p[0];m=p[1];d=p[2];}else if(p[2]>31||p[2]>=1000){y=p[2];if(p[0]>12){d=p[0];m=p[1];}else if(p[1]>12){m=p[0];d=p[1];}else if(CONFIG.DATE_DAYFIRST){d=p[0];m=p[1];}else{m=p[0];d=p[1];}}else return null;if(y<100)y+=2000;const dt=new Date(y,m-1,d);if(isNaN(dt.getTime()))return null;const wd=(dt.getDay()+6)%7;const mm=String(m).padStart(2,'0'),dd=String(d).padStart(2,'0');return{ym:y+'-'+mm,wd:wd,key:y+'-'+mm+'-'+dd};}
+function parseHora(s){if(!s)return 0;s=String(s).trim();if(s.indexOf(':')>=0)return parseInt(s.split(':')[0],10)||0;const f=parseFloat(s);if(!isNaN(f)&&f<1)return Math.floor(f*24);return parseInt(s,10)||0;}
+function clasif(r){const e=(r.estado||'').toUpperCase();
+  if(e==='FINALIZADO'||e==='VALIDADO')return 'cerrada';
+  if(e==='ESPERA'||e==='ATENCIÓN'||e==='ATENCION'||e==='OBSERVACIÓN'||e==='OBSERVACION')return 'pendiente';
+  if(e==='INASISTENTE'||e==='ANULADO'||e==='ANULADA')return 'ausentismo';
+  if(e==='CONFIRMADO'||e==='AGENDADO'||e==='ASIGNADO')return(r.mes<CURRENT_YM)?'ausentismo':'futuro';
+  return 'futuro';}
+const ocupColor=v=>v==null?'#cbd5e1':v>=80?'#2e9e6b':v>=65?'#e0a008':'#d6453d';
+const nsColor=v=>v<=10?'#2e9e6b':v<=15?'#e0a008':'#d6453d';
+const ocupClass=v=>v==null?'n':v>=80?'g':v>=65?'a':'r';
+const nsClass=v=>v<=10?'g':v<=15?'a':'r';
+const fichaClass=v=>v>=98?'g':v>=95?'a':'r';
+
+/* ============================ CSV parser ============================ */
+function parseCSV(text){
+  const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}
+    else{if(c==='"')q=true;else if(c===','){row.push(f);f='';}else if(c==='\n'){row.push(f);rows.push(row);row=[];f='';}else if(c==='\r'){}else f+=c;}}
+  if(f.length||row.length){row.push(f);rows.push(row);}
+  return rows;
+}
+
+/* ============================ Estado global ============================ */
+let ROWS=[], COL={}, MESES=[];
+let PROD_ROWS=[], PROD_STATE='idle';
+
+/* ============================ Carga CSV principal ============================ */
+async function load(){
+  $('status').innerHTML='<span class="spin"></span>actualizando…';
+  try{
+    const url=CONFIG.CSV_URL+(CONFIG.CSV_URL.includes('?')?'&':'?')+'_cb='+Date.now();
+    const res=await fetch(url,{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const raw=parseCSV(await res.text());
+    if(!raw.length)throw new Error('CSV vacío');
+    let hi=raw.findIndex(r=>r.includes('Estado')&&r.includes('Sala'));
+    if(hi<0)hi=0;
+    const head=raw[hi].map(s=>s.trim());
+    COL={};head.forEach((h,j)=>COL[h]=j);
+    const gc=(r,name)=>{const j=COL[name];return(j!=null&&j<r.length&&r[j]!=null)?String(r[j]).trim():'';};
+    const seen=new Map();
+    for(let i=hi+1;i<raw.length;i++){
+      const r=raw[i];const est=gc(r,'Estado'),sala=gc(r,'Sala');
+      if(!est||!sala||est==='Estado')continue;
+      const dt=parseFecha(gc(r,'Fecha'));if(!dt)continue;
+      const ek=isKine(sala);
+      const id=gc(r,'Id')||('row'+i);
+      seen.set(id,{
+        estado:est,sala:sala,eskine:ek,kine:ek?kineName(sala):'',
+        mes:dt.ym,dia:DIAS[dt.wd],hb:parseHora(gc(r,'Hora')),
+        pac:gc(r,'Paciente')||'',
+        oper:gc(r,'Operador'),dni:gc(r,'DNI'),fecha:dt.key,
+        fin:est==='FINALIZADO'?1:0,ina:est==='INASISTENTE'?1:0,
+        ab:(est==='ESPERA'||est==='OBSERVACIÓN'||est==='OBSERVACION')?1:0
+      });
+    }
+    ROWS=[...seen.values()];
+    MESES=[...new Set(ROWS.map(r=>r.mes).filter(Boolean))].sort();
+    buildSelectors();
+    $('err').style.display='none';
+    const now=new Date();
+    $('status').textContent='Actualizado '+now.toLocaleString('es-CL',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})+' · '+fmt(ROWS.length)+' citas';
+    if(PROD_STATE==='idle'||PROD_STATE==='error')loadProd().then(()=>render());
+    render();
+  }catch(e){
+    $('status').textContent='';
+    $('err').style.display='block';
+    $('err').innerHTML='<b>No se pudo cargar la planilla.</b> '+e.message;
+    if(!ROWS.length)$('content').innerHTML='';
+  }
+}
+
+/* ============================ Carga CSV Producción ============================ */
+async function loadProd(){
+  if(!CONFIG.PROD_CSV_URL||PROD_STATE==='loading')return;
+  PROD_STATE='loading';
+  try{
+    const url=CONFIG.PROD_CSV_URL+(CONFIG.PROD_CSV_URL.includes('?')?'&':'?')+'_cb='+Date.now();
+    const res=await fetch(url,{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const raw=parseCSV(await res.text());
+    const hi=raw.findIndex(r=>{const u=r.map(x=>String(x).trim().toUpperCase());return u.includes('OBSERVACIONES')&&u.includes('SALA');});
+    if(hi<0)throw new Error('Sin encabezados');
+    const head=raw[hi].map(s=>String(s).trim().toUpperCase());
+    const C={};head.forEach((h,j)=>C[h]=j);
+    const g=(r,n)=>{const j=C[n];return(j!=null&&j<r.length&&r[j]!=null)?String(r[j]).trim():'';};
+    const seen=new Set();
+    PROD_ROWS=[];
+    for(let i=hi+1;i<raw.length;i++){
+      const r=raw[i];
+      const cod=g(r,'CÓDIGO').replace(/\s/g,'');
+      if(cod!=='0601101')continue;
+      const esp=g(r,'ESPECIALIDAD').toUpperCase();
+      if(esp.indexOf('KINESIO')<0)continue;
+      const rut=g(r,'RUT'),sala=g(r,'SALA');
+      if(!rut||!sala)continue;
+      const fechaRaw=g(r,'FECHA').split(' ')[0].split('T')[0];
+      if(!fechaRaw||fechaRaw.length<8)continue;
+      const key=rut+'|'+fechaRaw+'|'+sala;
+      if(seen.has(key))continue;
+      seen.add(key);
+      const mes=fechaRaw.slice(0,7);
+      const kine=kineName(sala);
+      const obs=g(r,'OBSERVACIONES').trim();
+      const diag=obs.replace(/^ingreso\s*/i,'').trim()||'Sin diagnóstico';
+      const pac=g(r,'PACIENTE')||'';
+      PROD_ROWS.push({rut,fecha:fechaRaw,mes,kine,diag,pac});
+    }
+    PROD_STATE='ok';
+  }catch(e){PROD_STATE='error';console.warn('Producción no cargada:',e.message);}
+}
+
+/* ============================ Selectores ============================ */
+function buildSelectors(){
+  // Kinesiólogos
+  const ks=$('ksel');const curK=ks.value;
+  const kines=[...new Set(ROWS.filter(r=>r.eskine&&r.kine).map(r=>pretty(r.kine)))].sort();
+  ks.innerHTML=kines.map(k=>`<option value="${k}">${k}</option>`).join('');
+  if(curK&&kines.includes(curK))ks.value=curK;else if(CONFIG.DEFAULT_KINE&&kines.includes(CONFIG.DEFAULT_KINE))ks.value=CONFIG.DEFAULT_KINE;else if(kines.length)ks.value=kines[0];
+  // Años
+  const ys=$('ysel');const curY=ys.value;
+  const years=[...new Set(MESES.map(m=>m.split('-')[0]))].sort().reverse();
+  ys.innerHTML='<option value="TOTAL">Todos los años</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  ys.value=(curY&&[...ys.options].some(o=>o.value===curY))?curY:(years[0]||'TOTAL');
+  buildMonthSel();
+}
+function buildMonthSel(){
+  const ms=$('msel');const curM=ms.value;const y=$('ysel').value;
+  const filtered=y==='TOTAL'?MESES:MESES.filter(m=>m.startsWith(y));
+  ms.innerHTML='<option value="TOTAL">Todos los meses</option>'+filtered.map(m=>{const p=m.split('-');return`<option value="${m}">${N3[+p[1]]} ${p[0]}</option>`;}).join('');
+  ms.value=(curM&&[...ms.options].some(o=>o.value===curM))?curM:'TOTAL';
+  buildDaySel();
+}
+function buildDaySel(){
+  const gd=$('gday');const curD=gd.value;const y=$('ysel').value;const m=$('msel').value;
+  const kn=pretty2key($('ksel').value);
+  const dias=[...new Set(ROWS.filter(r=>r.eskine&&r.kine===kn&&(y==='TOTAL'||r.mes.startsWith(y))&&(m==='TOTAL'||r.mes===m)).map(r=>r.fecha))].sort().reverse();
+  gd.innerHTML='<option value="TOTAL">Todos los días</option>'+dias.map(d=>{const p=d.split('-');return`<option value="${d}">${p[2]}-${p[1]}-${p[0]}</option>`;}).join('');
+  gd.value=(curD&&dias.includes(curD))?curD:'TOTAL';
+}
+function pretty2key(pname){
+  const r=ROWS.find(r=>r.eskine&&pretty(r.kine)===pname);return r?r.kine:'';}
+
+/* ============================ Subset ============================ */
+function subset(){
+  const y=$('ysel').value,m=$('msel').value,d=$('gday').value;
+  return ROWS.filter(r=>(y==='TOTAL'||r.mes.startsWith(y))&&(m==='TOTAL'||r.mes===m)&&(d==='TOTAL'||r.fecha===d));
+}
+function periodLabel(){
+  const y=$('ysel').value,m=$('msel').value,d=$('gday').value;
+  if(d!=='TOTAL'){const p=d.split('-');return`${p[2]}-${p[1]}-${p[0]}`;}
+  if(m!=='TOTAL'){const p=m.split('-');return`${N3[+p[1]]} ${p[0]}`;}
+  if(y!=='TOTAL')return`Año ${y}`;return'Todo el período';
+}
+
+/* ============================ Render principal ============================ */
+function render(){
+  const kName=$('ksel').value;
+  if(!kName){$('content').innerHTML='<div class="loading">Selecciona un kinesiólogo.</div>';return;}
+  const kineKey=pretty2key(kName);
+  if(!kineKey){$('content').innerHTML='<div class="loading">Sin datos.</div>';return;}
+
+  $('hdr-title').textContent='Dashboard — '+kName;
+  $('hdr-sub').textContent='Período: '+periodLabel()+' · Datos en vivo desde Google Sheets';
+
+  const rows=subset();
+  const kineRows=rows.filter(r=>r.eskine&&r.kine===kineKey);
+  const allKineRows=ROWS.filter(r=>r.eskine&&r.kine===kineKey);
+
+  if(!kineRows.length&&!allKineRows.length){
+    $('content').innerHTML='<div class="card full"><p class="desc">Sin datos para <b>'+kName+'</b> en el período seleccionado.</p></div>';return;
+  }
+
+  /* ── Métricas del período ── */
+  let gFin=0,gIna=0,gCerr=0,gPend=0,gAus=0,gUni=0,gFinH=0;
+  const dmap={};
+  kineRows.forEach(r=>{
+    const c=clasif(r);
+    if(r.fin)gFin++;if(r.ina)gIna++;
+    if(c==='cerrada')gCerr++;else if(c==='pendiente')gPend++;else if(c==='ausentismo')gAus++;
+    if(c!=='futuro')gUni++;
+    dmap[r.fecha]=DIDX[r.dia];
+    if(r.fin&&dayHours(kineKey,DIDX[r.dia])>0)gFinH++;
+  });
+  let cap=0,horas=0;
+  Object.entries(dmap).forEach(([,wd])=>{cap+=dcap(kineKey,wd);horas+=dayHours(kineKey,wd);});
+  const ocup=cap?Math.round(gFin/cap*100):null;
+  const gAsist=gCerr+gPend;
+  const ausent=gUni?+(gAus/gUni*100).toFixed(1):0;
+  const cierre=gAsist?+(gCerr/gAsist*100).toFixed(1):100;
+  const athora=horas?+(gFinH/horas).toFixed(2):null;
+  const pac=new Set(kineRows.filter(r=>r.dni).map(r=>r.dni)).size;
+
+  /* Ingresos desde PROD */
+  let ingList=[];
+  if(PROD_STATE==='ok'){
+    const y=$('ysel').value,m=$('msel').value,d=$('gday').value;
+    ingList=PROD_ROWS.filter(r=>(y==='TOTAL'||r.mes.startsWith(y))&&(m==='TOTAL'||r.mes===m)&&(d==='TOTAL'||r.fecha===d)&&r.kine===kineKey);
+  }
+  const ingresos=ingList.length;
+
+  /* ── PACIENTES ── */
+  const byPat={};
+  allKineRows.forEach(r=>{
+    if(!r.dni)return;
+    const p=byPat[r.dni]=byPat[r.dni]||{dni:r.dni,pac:r.pac||'',finP:0,inaP:0,finAll:0,firstAll:'',lastAll:'',diag:'',ingDate:''};
+    if(!p.pac&&r.pac)p.pac=r.pac;
+    if(r.fin){p.finAll++;if(!p.firstAll||r.fecha<p.firstAll)p.firstAll=r.fecha;if(!p.lastAll||r.fecha>p.lastAll)p.lastAll=r.fecha;}
+  });
+  kineRows.forEach(r=>{
+    if(!r.dni)return;
+    const p=byPat[r.dni];if(!p)return;
+    if(r.fin)p.finP++;if(r.ina)p.inaP++;
+  });
+  if(PROD_STATE==='ok'){
+    PROD_ROWS.filter(r=>r.kine===kineKey).forEach(r=>{
+      const p=byPat[r.rut];if(!p)return;
+      if(!p.diag&&r.diag&&r.diag!=='Sin diagnóstico')p.diag=r.diag;
+      if(!p.ingDate||r.fecha<p.ingDate)p.ingDate=r.fecha;
+      if(!p.pac&&r.pac)p.pac=r.pac;
+    });
+  }
+  const todayMs=Date.now();
+  const dSince=d=>{if(!d)return 9999;return Math.floor((todayMs-new Date(d).getTime())/86400000);};
+  const patArr=Object.values(byPat).map(p=>{
+    const ds=dSince(p.lastAll);
+    return{...p,daysSince:ds,
+      status:ds<=14?'activo':ds<=30?'reciente':ds<=60?'alejado':'inactivo',
+      abRisk:PROD_STATE==='ok'&&!!(p.ingDate&&p.finAll<5&&ds>30)};
+  });
+  const periodPats=patArr.filter(p=>p.finP>0||p.inaP>0).sort((a,b)=>b.finP-a.finP);
+  const allPats=patArr.filter(p=>p.finAll>0).sort((a,b)=>b.finAll-a.finAll);
+  const avgSes=periodPats.length?(periodPats.reduce((a,p)=>a+p.finP,0)/periodPats.length).toFixed(1):'0';
+  const nActivo=periodPats.filter(p=>p.status==='activo').length;
+  const nRec=periodPats.filter(p=>p.status==='reciente').length;
+  const nAlej=periodPats.filter(p=>p.status==='alejado').length;
+  const nInact=periodPats.filter(p=>p.status==='inactivo').length;
+  const nRiesgo=periodPats.filter(p=>p.abRisk).length;
+
+  /* ── TENDENCIA MENSUAL ── */
+  const byMesKine={};allKineRows.forEach(r=>{if(r.fin)byMesKine[r.mes]=(byMesKine[r.mes]||0)+1;});
+  const byMesTeam={};ROWS.filter(r=>r.eskine&&r.fin).forEach(r=>{byMesTeam[r.mes]=(byMesTeam[r.mes]||0)+1;});
+  const kPerMes={};ROWS.filter(r=>r.eskine&&r.kine).forEach(r=>{if(!kPerMes[r.mes])kPerMes[r.mes]=new Set();kPerMes[r.mes].add(r.kine);});
+  const tMeses=MESES.filter(m=>byMesKine[m]);
+
+  /* ── DIAGNÓSTICOS ── */
+  const diagCount={};
+  ingList.forEach(r=>{if(r.diag&&r.diag!=='Sin diagnóstico')diagCount[r.diag]=(diagCount[r.diag]||0)+1;});
+  const topDiag=Object.keys(diagCount).map(d=>({d,n:diagCount[d]})).sort((a,b)=>b.n-a.n).slice(0,10);
+
+  /* ── DERIVACIÓN MÉDICA ── */
+  const kineDni=new Set(kineRows.filter(r=>r.fin&&r.dni).map(r=>r.dni));
+  const finByDni={};kineRows.forEach(r=>{if(r.fin&&r.dni)finByDni[r.dni]=(finByDni[r.dni]||0)+1;});
+  const docpat={};rows.forEach(r=>{if(isDoc(r.sala)&&r.dni&&r.fin){if(!docpat[r.sala])docpat[r.sala]=new Set();docpat[r.sala].add(r.dni);}});
+  const derivArr=[];
+  for(const s in docpat){const pats=docpat[s];let kc=0,sesReal=0;pats.forEach(d=>{if(kineDni.has(d)){kc++;sesReal+=finByDni[d]||0;}});if(kc>0){const parts=s.split(' - ');derivArr.push({n:tc(parts[0]),esp:parts[1]?tc(parts[1]):'',pac:pats.size,kine:kc,sesReal,pct:Math.round(kc/pats.size*100)});}}
+  derivArr.sort((a,b)=>b.sesReal-a.sesReal);
+
+  /* ── HTML ── */
+  let h='';
+
+  /* ① KPIs */
+  h+='<div class="kpis" style="margin-bottom:22px">'
+    +'<div class="kpi accent"><div class="v">'+fmt(gFin)+'</div><div class="l">Atenciones</div><div class="h">finalizadas · '+periodLabel()+'</div></div>'
+    +'<div class="kpi"><div class="v">'+(ocup==null?'—':ocup+'%')+'</div><div class="l">Ocupación</div><div class="h">vs capacidad declarada</div></div>'
+    +'<div class="kpi"><div class="v">'+ausent.toFixed(1)+'%</div><div class="l">Ausentismo</div><div class="h">'+fmt(gIna)+' citas sin atención</div></div>'
+    +'<div class="kpi"><div class="v">'+cierre.toFixed(0)+'%</div><div class="l">Cierre fichas</div><div class="h">de asistencias</div></div>'
+    +'<div class="kpi accent2"><div class="v">'+fmt(ingresos)+'</div><div class="l">Ingresos nuevos</div><div class="h">'+(PROD_STATE==='ok'?'código 0601101':'⏳ cargando…')+'</div></div>'
+    +'<div class="kpi"><div class="v">'+(athora==null?'—':athora.toFixed(2))+'</div><div class="l">At./hora</div><div class="h">atenciones por hora trabajada</div></div>'
+    +'<div class="kpi"><div class="v">'+periodPats.length+'</div><div class="l">Pacientes</div><div class="h">en el período</div></div>'
+    +'</div>';
+
+  /* ① bis — Pacientes del día (solo cuando se filtra por un día específico) */
+  const selectedDay=$('gday').value;
+  if(selectedDay!=='TOTAL'){
+    const dateParts=selectedDay.split('-');
+    const dateLabel=dateParts[2]+'-'+dateParts[1]+'-'+dateParts[0];
+    // Separar atendidos e inasistentes, ordenados por hora
+    const dayAtt=[],dayAbs=[];
+    kineRows.forEach(r=>{
+      if(!r.dni)return;
+      const p=byPat[r.dni];
+      const nm=r.pac||(p&&p.pac)||'—';
+      const item={hora:r.hb,pac:nm,dni:r.dni,
+        finAll:p?p.finAll:0,diag:p?p.diag:'—',
+        ingDate:p?p.ingDate:'',
+        status:p?p.status:'inactivo'};
+      if(r.fin)dayAtt.push(item);
+      else if(r.ina)dayAbs.push(item);
+    });
+    dayAtt.sort((a,b)=>a.hora-b.hora);
+    dayAbs.sort((a,b)=>a.hora-b.hora);
+    let dayRows='';
+    dayAtt.forEach(p=>{
+      const sc={activo:'g',reciente:'a',alejado:'a',inactivo:'r'}[p.status]||'n';
+      const sl={activo:'Activo',reciente:'Reciente',alejado:'Alejado',inactivo:'Inactivo'}[p.status]||'—';
+      const sic=p.finAll>0?(p.finAll%10||10):0;
+      const cyc=p.finAll>0?Math.ceil(p.finAll/10):0;
+      const pw=(sic/10*100).toFixed(1);
+      const pc=sic>=10?'var(--green)':sic>=5?'var(--amber)':'var(--blue)';
+      const progLabel=cyc>1?'C'+cyc+' · '+sic+'/10':sic+'/10';
+      const esIngreso=p.ingDate&&p.finAll<=2;
+      dayRows+='<tr>'
+        +'<td style="color:var(--muted);font-size:12px;white-space:nowrap">'+(p.hora>0?p.hora+':00':'—')+'</td>'
+        +'<td class="name">'+p.pac+(esIngreso?' <span style="background:#e4f5ec;color:var(--green);font-size:10px;padding:1px 5px;border-radius:5px;font-weight:700">INGRESO</span>':'')+'</td>'
+        +'<td class="num" style="font-weight:700;font-size:16px;color:var(--teal)">'+p.finAll+'</td>'
+        +'<td class="num"><div style="display:flex;align-items:center;gap:5px;justify-content:flex-end"><div style="width:54px;height:8px;background:#eef2f7;border-radius:4px;overflow:hidden"><div style="width:'+pw+'%;height:100%;background:'+pc+';border-radius:4px"></div></div><span style="font-size:10px;color:var(--muted)">'+progLabel+'</span></div></td>'
+        +'</tr>';
+    });
+    if(dayAbs.length){
+      dayRows+='<tr><td colspan="4" style="background:#fef9ec;color:#9a6c04;font-size:11px;font-weight:700;padding:6px 8px;border-top:2px solid var(--line)">INASISTENCIAS — '+dayAbs.length+' paciente'+(dayAbs.length>1?'s':'')+'</td></tr>';
+      dayAbs.forEach(p=>{
+        dayRows+='<tr style="opacity:0.65">'
+          +'<td style="color:var(--muted);font-size:12px;white-space:nowrap">'+(p.hora>0?p.hora+':00':'—')+'</td>'
+          +'<td class="name" style="text-decoration:line-through;color:var(--muted)">'+p.pac+'</td>'
+          +'<td class="num" style="color:var(--muted)">'+p.finAll+'</td>'
+          +'<td></td>'
+          +'</tr>';
+      });
+    }
+    h+='<div class="card full" style="margin-bottom:18px">'
+      +'<h2>Pacientes del '+dateLabel+'</h2>'
+      +'<p class="desc">'+dayAtt.length+' paciente'+(dayAtt.length!==1?'s':'')+' atendidos'+(dayAbs.length?' · '+dayAbs.length+' inasistencia'+(dayAbs.length>1?'s':''):'')+'. "Sesión N°" = total acumulado con este kinesiólogo hasta hoy (incluye la de hoy). La etiqueta <b>INGRESO</b> indica primera o segunda sesión.</p>'
+      +'<div style="overflow-x:auto"><table style="min-width:420px"><thead><tr>'
+        +'<th>Hora</th>'
+        +'<th>Paciente</th>'
+        +'<th class="num">Sesión N°<br><span style="font-weight:400;font-size:9px">con este kine</span></th>'
+        +'<th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/10 ses.</span></th>'
+      +'</tr></thead><tbody>'
+      +(dayRows||'<tr><td colspan="4" class="qnote">Sin atenciones ese día.</td></tr>')
+      +'</tbody></table></div>'
+      +'</div>';
+
+    /* Ingresos del día */
+    if(PROD_STATE==='ok'){
+      if(ingList.length){
+        let ingRows='';
+        ingList.forEach((r,i)=>{
+          ingRows+='<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)">'
+            +'<div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal-d));color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</div>'
+            +'<div style="flex:1;min-width:0">'
+              +'<div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(r.pac?tc(r.pac):'Paciente sin nombre')+'</div>'
+              +'<div style="font-size:11px;color:var(--muted);margin-top:1px">'+(r.diag&&r.diag!=='Sin diagnóstico'?r.diag:'Sin diagnóstico registrado')+'</div>'
+            +'</div>'
+            +'<span style="background:#e4f5ec;color:var(--green);font-size:10px;padding:2px 7px;border-radius:6px;font-weight:700;flex-shrink:0">INGRESO</span>'
+            +'</div>';
+        });
+        h+='<div class="card full" style="margin-bottom:18px;border-left:3px solid var(--green)">'
+          +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+            +'<div style="font-size:36px;font-weight:700;color:var(--green);line-height:1">'+ingList.length+'</div>'
+            +'<div><div style="font-size:14.5px;font-weight:700">Ingreso'+(ingList.length>1?'s':'')+' del '+dateLabel+'</div>'
+            +'<div style="font-size:12px;color:var(--muted)">Evaluaciones kinesiológicas integrales · código 0601101</div></div>'
+          +'</div>'
+          +ingRows
+          +'</div>';
+      } else {
+        h+='<div class="card full" style="margin-bottom:18px;border-left:3px solid var(--line)">'
+          +'<div style="font-size:13px;color:var(--muted)">Sin ingresos registrados el '+dateLabel+' (código 0601101).</div>'
+          +'</div>';
+      }
+    } else {
+      h+='<div class="card full" style="margin-bottom:18px">'
+        +'<h2>Ingresos del día</h2><p class="desc" style="color:var(--amber)">⏳ Cargando planilla de producción…</p>'
+        +'</div>';
+    }
+  }
+
+  /* ③ Sesiones por paciente */
+  let patRows='';
+  periodPats.forEach(p=>{
+    const sc={activo:'g',reciente:'a',alejado:'a',inactivo:'r'}[p.status];
+    const sl={activo:'Activo',reciente:'Reciente',alejado:'Alejado',inactivo:'Inactivo'}[p.status];
+    const ld=p.lastAll?p.lastAll.split('-').reverse().join('-'):'—';
+    const fd=p.firstAll?p.firstAll.split('-').reverse().join('-'):'—';
+    const sic=p.finAll>0?(p.finAll%10||10):0;
+    const cyc=p.finAll>0?Math.ceil(p.finAll/10):0;
+    const pw=(sic/10*100).toFixed(1);
+    const pc=sic>=10?'var(--green)':sic>=5?'var(--amber)':'var(--blue)';
+    const progLabel=cyc>1?'C'+cyc+' · '+sic+'/10':sic+'/10';
+    const nm=p.pac||(p.dni?'Pac. …'+String(p.dni).slice(-4):'—');
+    patRows+=`<tr${p.abRisk?' style="background:#fff8f0"':''}>
+      <td class="name">${nm}${p.abRisk?' <span style="color:var(--red);font-size:10px">⚠</span>':''}</td>
+      <td class="num" style="font-weight:700;font-size:15px;color:var(--teal)">${p.finP}</td>
+      <td class="num" style="font-weight:700">${p.finAll}</td>
+      <td class="num"><div style="display:flex;align-items:center;gap:5px;justify-content:flex-end"><div style="width:54px;height:8px;background:#eef2f7;border-radius:4px;overflow:hidden"><div style="width:${pw}%;height:100%;background:${pc};border-radius:4px"></div></div><span style="font-size:10px;color:var(--muted)">${progLabel}</span></div></td>
+      <td class="num" style="color:var(--muted)">${p.inaP>0?p.inaP:'—'}</td>
+      <td class="num">${fd}</td>
+      <td class="num">${ld}</td>
+      <td class="num">${p.daysSince>=9999?'—':p.daysSince}</td>
+      <td><span class="pill ${sc}">${sl}</span></td>
+      <td style="font-size:11px;color:var(--muted);white-space:normal;line-height:1.3;max-width:200px">${p.diag||'—'}</td>
+    </tr>`;
+  });
+  h+=`<div class="card full" style="margin-bottom:18px">
+    <h2>Mis pacientes en el período</h2>
+    <p class="desc">Pacientes atendidos en el período seleccionado. "Total conmigo" = sesiones históricas contigo. La barra de progreso es sobre 10 sesiones (ciclo típico). Estado según última visita real (hoy).</p>
+    <div class="stat-row">
+      <div class="stat-box"><div class="sv" style="color:var(--ink)">${periodPats.length}</div><div class="sl">Pacientes<br>período</div></div>
+      <div class="stat-box"><div class="sv" style="color:var(--green)">${nActivo}</div><div class="sl">Activos<br>≤14 días</div></div>
+      <div class="stat-box"><div class="sv" style="color:var(--amber)">${nRec}</div><div class="sl">Recientes<br>15–30 días</div></div>
+      <div class="stat-box"><div class="sv" style="color:#9a6c04">${nAlej}</div><div class="sl">Alejados<br>31–60 días</div></div>
+      <div class="stat-box"><div class="sv" style="color:var(--red)">${nInact}</div><div class="sl">Inactivos<br>&gt;60 días</div></div>
+      ${nRiesgo>0?`<div class="stat-box riesgo-box"><div class="sv" style="color:var(--red)">⚠ ${nRiesgo}</div><div class="sl" style="color:var(--red)">Riesgo<br>abandono</div></div>`:''}
+    </div>
+    <div style="overflow-x:auto"><table id="tbl-pac" style="min-width:900px">
+      <thead><tr>
+        <th>Paciente</th>
+        <th class="num">Ses.<br><span style="font-weight:400;font-size:9px">período</span></th>
+        <th class="num">Total conmigo<br><span style="font-weight:400;font-size:9px">histórico</span></th>
+        <th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/10 ses.</span></th>
+        <th class="num">Aus.<br><span style="font-weight:400;font-size:9px">período</span></th>
+        <th class="num">Primera visita</th>
+        <th class="num">Última visita</th>
+        <th class="num">Días sin<br><span style="font-weight:400;font-size:9px">venir</span></th>
+        <th>Estado</th>
+        <th>Diagnóstico</th>
+      </tr></thead>
+      <tbody>${patRows||'<tr><td colspan="10" class="qnote">Sin pacientes en el período.</td></tr>'}</tbody>
+    </table></div>
+    ${nRiesgo>0?`<div class="note warn" style="margin-top:10px"><b>⚠ Riesgo de abandono (${nRiesgo} paciente${nRiesgo>1?'s':''})</b>: tuvieron ingreso pero acumulan menos de 5 sesiones y no vienen hace más de 30 días. Considera contactarlos.</div>`:''}
+  </div>`;
+
+  /* ⑤ Ausentismo + Cierre de fichas */
+  const segs=[{l:'Cerradas',v:gCerr,c:'#2e9e6b'},{l:'Sin cerrar',v:gPend,c:'#e0a008'}].filter(s=>s.v>0);
+  const Tseg=segs.reduce((a,s)=>a+s.v,0)||1;
+  const barraSegs='<div style="display:flex;height:22px;border-radius:7px;overflow:hidden;font-size:10px;color:#fff;font-weight:600;margin:8px 0 6px">'+segs.map(s=>`<div style="width:${(s.v/Tseg*100).toFixed(1)}%;background:${s.c};display:flex;align-items:center;justify-content:center">${s.v/Tseg>0.05?Math.round(s.v/Tseg*100)+'%':''}</div>`).join('')+'</div>';
+  h+=`<div class="grid2" style="margin-bottom:18px">
+    <div class="card"><h2>Mi ausentismo</h2><p class="desc">% de citas en que el paciente no llegó o se anuló.</p>
+      <div style="font-size:32px;font-weight:700;color:${nsColor(ausent)}">${ausent.toFixed(1)}%</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">${fmt(gIna)} citas sin atención de ${fmt(gUni)} totales</div>
+      <div class="note" style="margin-top:10px">Verde ≤10% · Ámbar 11–15% · Rojo &gt;15%</div></div>
+    <div class="card"><h2>Cierre de fichas</h2><p class="desc">Finalizado ÷ asistencias. Las "sin cerrar" son fichas con estado Espera/Atención/Observación.</p>
+      ${barraSegs}
+      <div class="leg">${segs.map(s=>`<span><span class="dot" style="background:${s.c}"></span>${s.l} (${fmt(s.v)})</span>`).join('')}</div>
+      ${gPend>0?`<div class="note warn" style="margin-top:8px"><b>${fmt(gPend)}</b> cita${gPend>1?'s':''} sin cerrar en el período.</div>`:''}</div>
+  </div>`;
+
+  /* ⑥ Horarios + Días de mayor ocupación */
+  const finhK={};kineRows.forEach(r=>{if(r.fin)finhK[r.hb]=(finhK[r.hb]||0)+1;});
+  const hdataK=[];for(let hh=8;hh<20;hh++){if(hh===13)continue;const f=finhK[hh]||0;if(f>0)hdataK.push({h:hh,fin:f});}
+  const fdayK={},capdayK={},ddmK={};
+  kineRows.forEach(r=>{const wd=DIDX[r.dia];if(wd>5)return;if(r.fin)fdayK[wd]=(fdayK[wd]||0)+1;if(!ddmK[wd])ddmK[wd]=new Set();ddmK[wd].add(r.fecha);});
+  for(const wd in ddmK)capdayK[wd]=(capdayK[wd]||0)+dcap(kineKey,+wd)*ddmK[wd].size;
+  const wdays=[];for(let wd=0;wd<6;wd++){const f=fdayK[wd]||0,c=capdayK[wd]||0;if(f||c)wdays.push({dia:DIAS[wd],v:c?Math.round(f/c*100):0,fin:f});}
+  wdays.sort((a,b)=>b.v-a.v);
+  const wdMax=Math.max(110,...wdays.map(d=>d.v));
+  let hCard='<p class="qnote">Sin datos.</p>';
+  if(hdataK.length){
+    const HW=460,HH=190,Hp={l:26,r:12,t:18,b:24};
+    const maxvH=Math.max(...hdataK.map(d=>d.fin));
+    const bwH=(HW-Hp.l-Hp.r)/hdataK.length;
+    const YH=v=>HH-Hp.b-(v/maxvH)*(HH-Hp.t-Hp.b);
+    let svgH='';
+    hdataK.forEach((d,i)=>{const x=(Hp.l+bwH*i+bwH*0.16).toFixed(1),w=(bwH*0.68).toFixed(1),y=YH(d.fin).toFixed(1);svgH+=`<rect x="${x}" y="${y}" width="${w}" height="${(HH-Hp.b-YH(d.fin)).toFixed(1)}" fill="#0f8b8d" rx="3"><title>${d.h}:00 — ${d.fin} atenciones</title></rect><text x="${(+x+ +w/2).toFixed(1)}" y="${(+y-3).toFixed(1)}" font-size="8" fill="#1c2a3a" text-anchor="middle">${d.fin}</text><text x="${(+x+ +w/2).toFixed(1)}" y="${HH-Hp.b+13}" font-size="8.5" fill="#64748b" text-anchor="middle">${d.h}h</text>`;});
+    const topH=hdataK.reduce((a,b)=>b.fin>a.fin?b:a);
+    hCard=`<svg viewBox="0 0 ${HW} ${HH}">${svgH}</svg><p class="qnote">Hora con más actividad: <b>${topH.h}:00</b> (${topH.fin} atenciones).</p>`;
+  }
+  h+=`<div class="grid2" style="margin-bottom:18px">
+    <div class="card"><h2>Mis horarios más activos</h2><p class="desc">Atenciones por bloque horario en el período.</p>${hCard}</div>
+    <div class="card"><h2>Ocupación por día</h2><p class="desc">% de capacidad atendida por día de la semana.</p>
+      <div class="bars">${wdays.map(d=>`<div class="barrow" style="grid-template-columns:80px 1fr 80px"><div class="nm">${d.dia}</div><div class="track"><div class="fill" style="width:${Math.max(2,d.v/wdMax*100).toFixed(1)}%;background:${ocupColor(d.v)}"></div></div><div class="val">${d.v}% (${d.fin})</div></div>`).join('')||'<p class="qnote">Sin datos.</p>'}</div>
+      ${wdays.length?`<p class="qnote">Día más ocupado: <b>${wdays[0].dia} (${wdays[0].v}%)</b>.</p>`:''}</div>
+  </div>`;
+
+  /* ⑦ Derivación médica */
+  h+=`<div class="card full" style="margin-bottom:18px"><h2>Médicos que me derivan pacientes</h2><p class="desc">Médicos de CEMTRA cuyos pacientes también tienen sesiones finalizadas conmigo. Ordenado por sesiones reales.</p>
+    <div style="overflow-x:auto"><table><thead><tr><th>Médico</th><th>Especialidad</th><th class="num">Pac. del médico</th><th class="num">Me derivan</th><th class="num">% derivación</th><th class="num">Sesiones reales</th></tr></thead><tbody>
+    ${derivArr.length?derivArr.slice(0,15).map(d=>`<tr><td class="name">${d.n}</td><td style="color:var(--muted);font-size:11px">${d.esp}</td><td class="num">${fmt(d.pac)}</td><td class="num" style="font-weight:700;color:#0a6b6d">${fmt(d.kine)}</td><td class="num"><span class="pill ${d.pct>=20?'g':d.pct>=10?'a':'n'}">${d.pct}%</span></td><td class="num" style="font-weight:700;color:var(--teal)">${fmt(d.sesReal)}</td></tr>`).join(''):'<tr><td colspan="6" class="qnote">Sin derivaciones cruzables en el período.</td></tr>'}
+    </tbody></table></div></div>`;
+
+  /* ⑧ Tendencia mensual */
+  if(tMeses.length>1){
+    const TW=1080,TH=260,Lp={l:36,r:14,t:18,b:42};
+    const maxvT=Math.max(1,...tMeses.map(m=>byMesKine[m]||0));
+    const bwT=(TW-Lp.l-Lp.r)/tMeses.length;
+    const YT=v=>TH-Lp.b-(v/maxvT)*(TH-Lp.t-Lp.b);
+    let svgT='';
+    const gstep=Math.max(1,Math.ceil(maxvT/4));
+    for(let g=0;g<=maxvT;g+=gstep)svgT+=`<line x1="${Lp.l}" y1="${YT(g).toFixed(1)}" x2="${TW-Lp.r}" y2="${YT(g).toFixed(1)}" stroke="#f1f5f9"/><text x="${Lp.l-6}" y="${(YT(g)+3).toFixed(1)}" font-size="9" fill="#94a3b8" text-anchor="end">${g}</text>`;
+    tMeses.forEach((m,i)=>{
+      const v=byMesKine[m]||0,x=(Lp.l+bwT*i+bwT*0.18).toFixed(1),w=(bwT*0.64).toFixed(1),y=YT(v).toFixed(1);
+      const kCnt=kPerMes[m]?kPerMes[m].size:1;
+      const avg=Math.round((byMesTeam[m]||0)/kCnt),avgY=YT(avg).toFixed(1);
+      svgT+=`<rect x="${x}" y="${y}" width="${w}" height="${(TH-Lp.b-YT(v)).toFixed(1)}" fill="#0f8b8d" rx="3"><title>${m}: ${v} atenciones</title></rect>`;
+      svgT+=`<text x="${(+x+ +w/2).toFixed(1)}" y="${(+y-3).toFixed(1)}" font-size="9" fill="#1c2a3a" text-anchor="middle">${v}</text>`;
+      svgT+=`<line x1="${x}" y1="${avgY}" x2="${(+x+ +w).toFixed(1)}" y2="${avgY}" stroke="#e0a008" stroke-width="2" stroke-dasharray="3,2"><title>Promedio equipo: ${avg}</title></line>`;
+      const p=m.split('-');
+      svgT+=`<text x="${(+x+ +w/2).toFixed(1)}" y="${TH-Lp.b+15}" font-size="9" fill="#1c2a3a" text-anchor="middle">${N3[+p[1]]}</text><text x="${(+x+ +w/2).toFixed(1)}" y="${TH-Lp.b+27}" font-size="8" fill="#94a3b8" text-anchor="middle">${p[0].slice(2)}</text>`;
+    });
+    h+=`<div class="card full" style="margin-bottom:18px"><h2>Mi tendencia mensual</h2><p class="desc">Atenciones finalizadas por mes. La línea amarilla es el promedio del equipo ese mes.</p><svg viewBox="0 0 ${TW} ${TH}" preserveAspectRatio="xMidYMid meet">${svgT}</svg><div class="leg"><span><span class="dot" style="background:#0f8b8d"></span>Mis atenciones</span><span><span class="dot" style="background:#e0a008"></span>Promedio equipo</span></div></div>`;
+  }
+
+  $('content').innerHTML=h;
+  $('foot').innerHTML='Dashboard personal · datos desde Google Sheets en vivo · '+kName+' · '+new Date().toLocaleString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+/* ============================ Eventos ============================ */
+$('ksel').addEventListener('change',()=>{buildDaySel();render();});
+$('ysel').addEventListener('change',()=>{buildMonthSel();render();});
+$('msel').addEventListener('change',()=>{buildDaySel();render();});
+$('gday').addEventListener('change',()=>render());
+$('refresh').addEventListener('click',load);
+load();
+setInterval(load, CONFIG.REFRESH_MIN*60*1000);
+</script></body></html>
