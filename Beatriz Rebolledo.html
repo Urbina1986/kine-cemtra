@@ -153,8 +153,8 @@ async function load(){
         mes:dt.ym,dia:DIAS[dt.wd],hb:parseHora(gc(r,'Hora')),
         pac:gc(r,'Paciente')||'',
         oper:gc(r,'Operador'),dni:gc(r,'DNI'),fecha:dt.key,
-        fin:est==='FINALIZADO'?1:0,ina:est==='INASISTENTE'?1:0,
-        ab:(est==='ESPERA'||est==='OBSERVACIÓN'||est==='OBSERVACION')?1:0
+        fin:(est==='FINALIZADO'||est==='ESPERA'||est==='ATENCIÓN'||est==='ATENCION'||est==='OBSERVACIÓN'||est==='OBSERVACION')?1:0,ina:est==='INASISTENTE'?1:0,
+        ab:(est==='ESPERA'||est==='ATENCIÓN'||est==='ATENCION'||est==='OBSERVACIÓN'||est==='OBSERVACION')?1:0
       });
     }
     ROWS=[...seen.values()];
@@ -364,7 +364,7 @@ function render(){
 
   /* ① KPIs */
   h+='<div class="kpis" style="margin-bottom:22px">'
-    +'<div class="kpi accent"><div class="v">'+fmt(gFin)+'</div><div class="l">Atenciones</div><div class="h">finalizadas · '+periodLabel()+'</div></div>'
+    +'<div class="kpi accent"><div class="v">'+fmt(gFin)+'</div><div class="l">Atenciones</div><div class="h">atendidas · '+periodLabel()+'</div></div>'
     +'<div class="kpi"><div class="v">'+(ocup==null?'—':ocup+'%')+'</div><div class="l">Ocupación</div><div class="h">vs capacidad declarada</div></div>'
     +'<div class="kpi"><div class="v">'+ausent.toFixed(1)+'%</div><div class="l">Ausentismo</div><div class="h">'+fmt(gIna)+' citas sin atención</div></div>'
     +'<div class="kpi"><div class="v">'+cierre.toFixed(0)+'%</div><div class="l">Cierre fichas</div><div class="h">de asistencias</div></div>'
