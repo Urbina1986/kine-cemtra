@@ -329,7 +329,7 @@ function render(){
     const ds=dSince(p.lastAll);
     return{...p,daysSince:ds,
       status:ds<=14?'activo':ds<=30?'reciente':ds<=60?'alejado':'inactivo',
-      abRisk:PROD_STATE==='ok'&&!!(p.ingDate&&p.finAll<5&&ds>30)};
+      abRisk:PROD_STATE==='ok'&&!!(p.ingDate&&p.finAll<6&&ds>30)};
   });
   const periodPats=patArr.filter(p=>p.finP>0||p.inaP>0).sort((a,b)=>b.finP-a.finP);
   const allPats=patArr.filter(p=>p.finAll>0).sort((a,b)=>b.finAll-a.finAll);
@@ -397,11 +397,11 @@ function render(){
     dayAtt.forEach(p=>{
       const sc={activo:'g',reciente:'a',alejado:'a',inactivo:'r'}[p.status]||'n';
       const sl={activo:'Activo',reciente:'Reciente',alejado:'Alejado',inactivo:'Inactivo'}[p.status]||'—';
-      const sic=p.finAll>0?(p.finAll%10||10):0;
-      const cyc=p.finAll>0?Math.ceil(p.finAll/10):0;
-      const pw=(sic/10*100).toFixed(1);
-      const pc=sic>=10?'var(--green)':sic>=5?'var(--amber)':'var(--blue)';
-      const progLabel=cyc>1?'C'+cyc+' · '+sic+'/10':sic+'/10';
+      const sic=p.finAll>0?(p.finAll%12||12):0;
+      const cyc=p.finAll>0?Math.ceil(p.finAll/12):0;
+      const pw=(sic/12*100).toFixed(1);
+      const pc=sic>=12?'var(--green)':sic>=6?'var(--amber)':'var(--blue)';
+      const progLabel=cyc>1?'C'+cyc+' · '+sic+'/12':sic+'/12';
       const esIngreso=p.ingDate&&p.finAll<=2;
       dayRows+='<tr>'
         +'<td style="color:var(--muted);font-size:12px;white-space:nowrap">'+(p.hora>0?p.hora+':00':'—')+'</td>'
@@ -428,7 +428,7 @@ function render(){
         +'<th>Hora</th>'
         +'<th>Paciente</th>'
         +'<th class="num">Sesión N°<br><span style="font-weight:400;font-size:9px">con este kine</span></th>'
-        +'<th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/10 ses.</span></th>'
+        +'<th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/12 ses.</span></th>'
       +'</tr></thead><tbody>'
       +(dayRows||'<tr><td colspan="4" class="qnote">Sin atenciones ese día.</td></tr>')
       +'</tbody></table></div>'
@@ -475,11 +475,11 @@ function render(){
     const sl={activo:'Activo',reciente:'Reciente',alejado:'Alejado',inactivo:'Inactivo'}[p.status];
     const ld=p.lastAll?p.lastAll.split('-').reverse().join('-'):'—';
     const fd=p.firstAll?p.firstAll.split('-').reverse().join('-'):'—';
-    const sic=p.finAll>0?(p.finAll%10||10):0;
-    const cyc=p.finAll>0?Math.ceil(p.finAll/10):0;
-    const pw=(sic/10*100).toFixed(1);
-    const pc=sic>=10?'var(--green)':sic>=5?'var(--amber)':'var(--blue)';
-    const progLabel=cyc>1?'C'+cyc+' · '+sic+'/10':sic+'/10';
+    const sic=p.finAll>0?(p.finAll%12||12):0;
+    const cyc=p.finAll>0?Math.ceil(p.finAll/12):0;
+    const pw=(sic/12*100).toFixed(1);
+    const pc=sic>=12?'var(--green)':sic>=6?'var(--amber)':'var(--blue)';
+    const progLabel=cyc>1?'C'+cyc+' · '+sic+'/12':sic+'/12';
     const nm=p.pac||(p.dni?'Pac. …'+String(p.dni).slice(-4):'—');
     patRows+=`<tr${p.abRisk?' style="background:#fff8f0"':''}>
       <td class="name">${nm}${p.abRisk?' <span style="color:var(--red);font-size:10px">⚠</span>':''}</td>
@@ -496,7 +496,7 @@ function render(){
   });
   h+=`<div class="card full" style="margin-bottom:18px">
     <h2>Mis pacientes en el período</h2>
-    <p class="desc">Pacientes atendidos en el período seleccionado. "Total conmigo" = sesiones históricas contigo. La barra de progreso es sobre 10 sesiones (ciclo típico). Estado según última visita real (hoy).</p>
+    <p class="desc">Pacientes atendidos en el período seleccionado. "Total conmigo" = sesiones históricas contigo. La barra de progreso es sobre 12 sesiones (ciclo típico). Estado según última visita real (hoy).</p>
     <div class="stat-row">
       <div class="stat-box"><div class="sv" style="color:var(--ink)">${periodPats.length}</div><div class="sl">Pacientes<br>período</div></div>
       <div class="stat-box"><div class="sv" style="color:var(--green)">${nActivo}</div><div class="sl">Activos<br>≤14 días</div></div>
@@ -510,7 +510,7 @@ function render(){
         <th>Paciente</th>
         <th class="num">Ses.<br><span style="font-weight:400;font-size:9px">período</span></th>
         <th class="num">Total conmigo<br><span style="font-weight:400;font-size:9px">histórico</span></th>
-        <th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/10 ses.</span></th>
+        <th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/12 ses.</span></th>
         <th class="num">Aus.<br><span style="font-weight:400;font-size:9px">período</span></th>
         <th class="num">Primera visita</th>
         <th class="num">Última visita</th>
