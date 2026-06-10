@@ -209,6 +209,21 @@ async function loadProd(){
       const pac=g(r,'PACIENTE')||'';
       PROD_ROWS.push({rut,fecha:fechaRaw,mes,kine,diag,pac});
     }
+    /* Cada ciclo completo tiene DOS evaluaciones 0601101: la inicial (ingreso) y la final (cierre de alta).
+       Emparejado secuencial por paciente+kine: la 1ª eval abre ciclo (tipo 'ing'); la siguiente dentro de
+       DIAS_MAX_CICLO días lo cierra (tipo 'cierre'); pasado ese plazo se considera un ingreso nuevo. */
+    const DIAS_MAX_CICLO=120;
+    const dnum=f=>{const p=f.split('-');return Date.UTC(+p[0],+p[1]-1,+p[2])/86400000;};
+    const byPK={};
+    PROD_ROWS.forEach(r=>{(byPK[r.rut+'|'+r.kine]=byPK[r.rut+'|'+r.kine]||[]).push(r);});
+    for(const k in byPK){
+      const evs=byPK[k].sort((a,b)=>a.fecha<b.fecha?-1:1);
+      let open=-1;
+      evs.forEach(r=>{
+        if(open>=0&&dnum(r.fecha)-open<=DIAS_MAX_CICLO){r.tipo='cierre';open=-1;}
+        else{r.tipo='ing';open=dnum(r.fecha);}
+      });
+    }
     PROD_STATE='ok';
   }catch(e){PROD_STATE='error';console.warn('Producción no cargada:',e.message);}
 }
@@ -298,7 +313,7 @@ function render(){
   let ingList=[];
   if(PROD_STATE==='ok'){
     const y=$('ysel').value,m=$('msel').value,d=$('gday').value;
-    ingList=PROD_ROWS.filter(r=>(y==='TOTAL'||r.mes.startsWith(y))&&(m==='TOTAL'||r.mes===m)&&(d==='TOTAL'||r.fecha===d)&&r.kine===kineKey);
+    ingList=PROD_ROWS.filter(r=>(y==='TOTAL'||r.mes.startsWith(y))&&(m==='TOTAL'||r.mes===m)&&(d==='TOTAL'||r.fecha===d)&&r.kine===kineKey&&r.tipo==='ing');
   }
   const ingresos=ingList.length;
 
@@ -306,9 +321,9 @@ function render(){
   const byPat={};
   allKineRows.forEach(r=>{
     if(!r.dni)return;
-    const p=byPat[r.dni]=byPat[r.dni]||{dni:r.dni,pac:r.pac||'',finP:0,inaP:0,finAll:0,firstAll:'',lastAll:'',diag:'',ingDate:''};
+    const p=byPat[r.dni]=byPat[r.dni]||{dni:r.dni,pac:r.pac||'',finP:0,inaP:0,finAll:0,firstAll:'',lastAll:'',diag:'',ingDate:'',lastIng:'',finDates:[]};
     if(!p.pac&&r.pac)p.pac=r.pac;
-    if(r.fin){p.finAll++;if(!p.firstAll||r.fecha<p.firstAll)p.firstAll=r.fecha;if(!p.lastAll||r.fecha>p.lastAll)p.lastAll=r.fecha;}
+    if(r.fin){p.finAll++;p.finDates.push(r.fecha);if(!p.firstAll||r.fecha<p.firstAll)p.firstAll=r.fecha;if(!p.lastAll||r.fecha>p.lastAll)p.lastAll=r.fecha;}
   });
   kineRows.forEach(r=>{
     if(!r.dni)return;
@@ -319,17 +334,19 @@ function render(){
     PROD_ROWS.filter(r=>r.kine===kineKey).forEach(r=>{
       const p=byPat[r.rut];if(!p)return;
       if(!p.diag&&r.diag&&r.diag!=='Sin diagnóstico')p.diag=r.diag;
-      if(!p.ingDate||r.fecha<p.ingDate)p.ingDate=r.fecha;
+      if(r.tipo==='ing'){if(!p.ingDate||r.fecha<p.ingDate)p.ingDate=r.fecha;if(!p.lastIng||r.fecha>p.lastIng)p.lastIng=r.fecha;p.nIng=(p.nIng||0)+1;}else if(!p.cierreAll||r.fecha>p.cierreAll)p.cierreAll=r.fecha;
       if(!p.pac&&r.pac)p.pac=r.pac;
     });
   }
+  Object.values(byPat).forEach(p=>{p.sesCiclo=p.lastIng?p.finDates.filter(x=>x>=p.lastIng).length:0;});
   const todayMs=Date.now();
-  const dSince=d=>{if(!d)return 9999;return Math.floor((todayMs-new Date(d).getTime())/86400000);};
+  const hoy=new Date();const hoy0=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()).getTime();const dSince=d=>{if(!d)return 9999;const p=d.split('-');return Math.round((hoy0-new Date(+p[0],+p[1]-1,+p[2]).getTime())/86400000);};
   const patArr=Object.values(byPat).map(p=>{
     const ds=dSince(p.lastAll);
-    return{...p,daysSince:ds,
-      status:ds<=14?'activo':ds<=30?'reciente':ds<=60?'alejado':'inactivo',
-      abRisk:PROD_STATE==='ok'&&!!(p.ingDate&&p.finAll<6&&ds>30)};
+    const alta=!!(p.cierreAll&&p.lastIng&&p.cierreAll>=p.lastIng);
+    return{...p,daysSince:ds,alta,
+      status:alta?'alta':(ds<=14?'activo':ds<=30?'reciente':ds<=60?'alejado':'inactivo'),
+      abRisk:PROD_STATE==='ok'&&!alta&&!!(p.ingDate&&p.finAll<6&&ds>30)};
   });
   const periodPats=patArr.filter(p=>p.finP>0||p.inaP>0).sort((a,b)=>b.finP-a.finP);
   const allPats=patArr.filter(p=>p.finAll>0).sort((a,b)=>b.finAll-a.finAll);
@@ -338,6 +355,7 @@ function render(){
   const nRec=periodPats.filter(p=>p.status==='reciente').length;
   const nAlej=periodPats.filter(p=>p.status==='alejado').length;
   const nInact=periodPats.filter(p=>p.status==='inactivo').length;
+  const nAlta=periodPats.filter(p=>p.status==='alta').length;
   const nRiesgo=periodPats.filter(p=>p.abRisk).length;
 
   /* ── TENDENCIA MENSUAL ── */
@@ -368,7 +386,7 @@ function render(){
     +'<div class="kpi"><div class="v">'+(ocup==null?'—':ocup+'%')+'</div><div class="l">Ocupación</div><div class="h">vs capacidad declarada</div></div>'
     +'<div class="kpi"><div class="v">'+ausent.toFixed(1)+'%</div><div class="l">Ausentismo</div><div class="h">'+fmt(gIna)+' citas sin atención</div></div>'
     +'<div class="kpi"><div class="v">'+cierre.toFixed(0)+'%</div><div class="l">Cierre fichas</div><div class="h">de asistencias</div></div>'
-    +'<div class="kpi accent2"><div class="v">'+fmt(ingresos)+'</div><div class="l">Ingresos nuevos</div><div class="h">'+(PROD_STATE==='ok'?'código 0601101':'⏳ cargando…')+'</div></div>'
+    +'<div class="kpi accent2"><div class="v">'+fmt(ingresos)+'</div><div class="l">Ingresos nuevos</div><div class="h">'+(PROD_STATE==='ok'?'evaluación inicial 0601101':'⏳ cargando…')+'</div></div>'
     +'<div class="kpi"><div class="v">'+(athora==null?'—':athora.toFixed(2))+'</div><div class="l">At./hora</div><div class="h">atenciones por hora trabajada</div></div>'
     +'<div class="kpi"><div class="v">'+periodPats.length+'</div><div class="l">Pacientes</div><div class="h">en el período</div></div>'
     +'</div>';
@@ -385,7 +403,7 @@ function render(){
       const p=byPat[r.dni];
       const nm=r.pac||(p&&p.pac)||'—';
       const item={hora:r.hb,pac:nm,dni:r.dni,
-        finAll:p?p.finAll:0,diag:p?p.diag:'—',
+        finAll:p?p.finAll:0,sesCiclo:p?p.sesCiclo:0,lastIng:p?p.lastIng:'',nIng:p?(p.nIng||0):0,diag:p?p.diag:'—',
         ingDate:p?p.ingDate:'',
         status:p?p.status:'inactivo'};
       if(r.fin)dayAtt.push(item);
@@ -395,11 +413,11 @@ function render(){
     dayAbs.sort((a,b)=>a.hora-b.hora);
     let dayRows='';
     dayAtt.forEach(p=>{
-      const sc={activo:'g',reciente:'a',alejado:'a',inactivo:'r'}[p.status]||'n';
-      const sl={activo:'Activo',reciente:'Reciente',alejado:'Alejado',inactivo:'Inactivo'}[p.status]||'—';
-      const sic=p.finAll>0?(p.finAll%12||12):0;
-      const cyc=p.finAll>0?Math.ceil(p.finAll/12):0;
-      const pw=(sic/12*100).toFixed(1);
+      const sc={activo:'g',reciente:'a',alejado:'a',inactivo:'r',alta:'g'}[p.status]||'n';
+      const sl={activo:'Activo',reciente:'Reciente',alejado:'Alejado',inactivo:'Inactivo',alta:'Alta'}[p.status]||'—';
+      const sic=p.lastIng?p.sesCiclo:(p.finAll>0?(p.finAll%12||12):0);
+      const cyc=p.lastIng?(p.nIng||1):(p.finAll>0?Math.ceil(p.finAll/12):0);
+      const pw=Math.min(100,sic/12*100).toFixed(1);
       const pc=sic>=12?'var(--green)':sic>=6?'var(--amber)':'var(--blue)';
       const progLabel=cyc>1?'C'+cyc+' · '+sic+'/12':sic+'/12';
       const esIngreso=p.ingDate&&p.finAll<=2;
@@ -471,13 +489,13 @@ function render(){
   /* ③ Sesiones por paciente */
   let patRows='';
   periodPats.forEach(p=>{
-    const sc={activo:'g',reciente:'a',alejado:'a',inactivo:'r'}[p.status];
-    const sl={activo:'Activo',reciente:'Reciente',alejado:'Alejado',inactivo:'Inactivo'}[p.status];
+    const sc={activo:'g',reciente:'a',alejado:'a',inactivo:'r',alta:'g'}[p.status];
+    const sl={activo:'Activo',reciente:'Reciente',alejado:'Alejado',inactivo:'Inactivo',alta:'Alta'}[p.status];
     const ld=p.lastAll?p.lastAll.split('-').reverse().join('-'):'—';
-    const fd=p.firstAll?p.firstAll.split('-').reverse().join('-'):'—';
-    const sic=p.finAll>0?(p.finAll%12||12):0;
-    const cyc=p.finAll>0?Math.ceil(p.finAll/12):0;
-    const pw=(sic/12*100).toFixed(1);
+    const ciclo0=(p.lastIng&&p.lastIng>p.firstAll)?p.lastIng:p.firstAll;const fd=ciclo0?ciclo0.split('-').reverse().join('-'):'—';
+    const sic=p.lastIng?p.sesCiclo:(p.finAll>0?(p.finAll%12||12):0);
+    const cyc=p.lastIng?(p.nIng||1):(p.finAll>0?Math.ceil(p.finAll/12):0);
+    const pw=Math.min(100,sic/12*100).toFixed(1);
     const pc=sic>=12?'var(--green)':sic>=6?'var(--amber)':'var(--blue)';
     const progLabel=cyc>1?'C'+cyc+' · '+sic+'/12':sic+'/12';
     const nm=p.pac||(p.dni?'Pac. …'+String(p.dni).slice(-4):'—');
@@ -496,13 +514,14 @@ function render(){
   });
   h+=`<div class="card full" style="margin-bottom:18px">
     <h2>Mis pacientes en el período</h2>
-    <p class="desc">Pacientes atendidos en el período seleccionado. "Total conmigo" = sesiones históricas contigo. La barra de progreso es sobre 12 sesiones (ciclo típico). Estado según última visita real (hoy).</p>
+    <p class="desc">Pacientes atendidos en el período seleccionado. "Total conmigo" = sesiones históricas contigo. La barra de progreso cuenta las sesiones del ciclo actual (desde el último ingreso, evaluación 0601101) sobre 12. "Inicio ciclo" = fecha de ese ingreso; si no hay ingreso registrado, se estima desde el historial completo. "Alta" = ciclo cerrado con evaluación final 0601101. Estado según última visita real (hoy).</p>
     <div class="stat-row">
       <div class="stat-box"><div class="sv" style="color:var(--ink)">${periodPats.length}</div><div class="sl">Pacientes<br>período</div></div>
       <div class="stat-box"><div class="sv" style="color:var(--green)">${nActivo}</div><div class="sl">Activos<br>≤14 días</div></div>
       <div class="stat-box"><div class="sv" style="color:var(--amber)">${nRec}</div><div class="sl">Recientes<br>15–30 días</div></div>
       <div class="stat-box"><div class="sv" style="color:#9a6c04">${nAlej}</div><div class="sl">Alejados<br>31–60 días</div></div>
       <div class="stat-box"><div class="sv" style="color:var(--red)">${nInact}</div><div class="sl">Inactivos<br>&gt;60 días</div></div>
+      ${nAlta>0?`<div class="stat-box"><div class="sv" style="color:var(--teal)">${nAlta}</div><div class="sl">Altas<br>ciclo cerrado</div></div>`:""}
       ${nRiesgo>0?`<div class="stat-box riesgo-box"><div class="sv" style="color:var(--red)">⚠ ${nRiesgo}</div><div class="sl" style="color:var(--red)">Riesgo<br>abandono</div></div>`:''}
     </div>
     <div style="overflow-x:auto"><table id="tbl-pac" style="min-width:900px">
@@ -512,7 +531,7 @@ function render(){
         <th class="num">Total conmigo<br><span style="font-weight:400;font-size:9px">histórico</span></th>
         <th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/12 ses.</span></th>
         <th class="num">Aus.<br><span style="font-weight:400;font-size:9px">período</span></th>
-        <th class="num">Primera visita</th>
+        <th class="num">Inicio ciclo<br><span style="font-weight:400;font-size:9px">últ. ingreso</span></th>
         <th class="num">Última visita</th>
         <th class="num">Días sin<br><span style="font-weight:400;font-size:9px">venir</span></th>
         <th>Estado</th>
@@ -520,7 +539,7 @@ function render(){
       </tr></thead>
       <tbody>${patRows||'<tr><td colspan="10" class="qnote">Sin pacientes en el período.</td></tr>'}</tbody>
     </table></div>
-    ${nRiesgo>0?`<div class="note warn" style="margin-top:10px"><b>⚠ Riesgo de abandono (${nRiesgo} paciente${nRiesgo>1?'s':''})</b>: tuvieron ingreso pero acumulan menos de 5 sesiones y no vienen hace más de 30 días. Considera contactarlos.</div>`:''}
+    ${nRiesgo>0?`<div class="note warn" style="margin-top:10px"><b>⚠ Riesgo de abandono (${nRiesgo} paciente${nRiesgo>1?'s':''})</b>: tuvieron ingreso pero acumulan menos de 6 sesiones y no vienen hace más de 30 días. Considera contactarlos.</div>`:''}
   </div>`;
 
   /* ⑤ Ausentismo + Cierre de fichas */
