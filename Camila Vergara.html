@@ -197,12 +197,13 @@ async function loadProd(){
       if(esp.indexOf('KINESIO')<0)continue;
       const rut=g(r,'RUT'),sala=g(r,'SALA');
       if(!rut||!sala)continue;
-      const fechaRaw=g(r,'FECHA').split(' ')[0].split('T')[0];
-      if(!fechaRaw||fechaRaw.length<8)continue;
+      const _pf=parseFecha(g(r,'FECHA'));
+      if(!_pf)continue;
+      const fechaRaw=_pf.key;
       const key=rut+'|'+fechaRaw+'|'+sala;
       if(seen.has(key))continue;
       seen.add(key);
-      const mes=fechaRaw.slice(0,7);
+      const mes=_pf.ym;
       const kine=kineName(sala);
       const obs=g(r,'OBSERVACIONES').trim();
       const diag=obs.replace(/^ingreso\s*/i,'').trim()||'Sin diagnóstico';
@@ -426,11 +427,11 @@ function render(){
     dayAtt.forEach(p=>{
       const sc={activo:'g',reciente:'a',alejado:'a',inactivo:'r',alta:'g'}[p.status]||'n';
       const sl={activo:'Activo',reciente:'Reciente',alejado:'Alejado',inactivo:'Inactivo',alta:'Alta'}[p.status]||'—';
-      const sic=p.lastIng?p.sesCiclo:(p.finAll>0?(p.finAll%12||12):0);
-      const cyc=p.lastIng?(p.nIng||1):(p.finAll>0?Math.ceil(p.finAll/12):0);
-      const pw=Math.min(100,sic/12*100).toFixed(1);
-      const pc=sic>=12?'var(--green)':sic>=6?'var(--amber)':'var(--blue)';
-      const progLabel=cyc>1?'C'+cyc+' · '+sic+'/12':sic+'/12';
+      const cmax=(p.nIng>=2)?11:12;const sic=p.lastIng?p.sesCiclo:(p.finAll>0?(p.finAll%cmax||cmax):0);
+      const cyc=p.lastIng?(p.nIng||1):(p.finAll>0?Math.ceil(p.finAll/cmax):0);
+      const pw=Math.min(100,sic/cmax*100).toFixed(1);
+      const pc=sic>=cmax?'var(--green)':sic>=Math.ceil(cmax/2)?'var(--amber)':'var(--blue)';
+      const progLabel=cyc>1?'C'+cyc+' · '+sic+'/'+cmax:sic+'/'+cmax;
       const esIngreso=p.ingDate&&p.finAll<=2;
       dayRows+='<tr>'
         +'<td style="color:var(--muted);font-size:12px;white-space:nowrap">'+(p.hora>0?p.hora+':00':'—')+'</td>'
@@ -457,7 +458,7 @@ function render(){
         +'<th>Hora</th>'
         +'<th>Paciente</th>'
         +'<th class="num">Sesión N°<br><span style="font-weight:400;font-size:9px">con este kine</span></th>'
-        +'<th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/12 ses.</span></th>'
+        +'<th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/ciclo</span></th>'
       +'</tr></thead><tbody>'
       +(dayRows||'<tr><td colspan="4" class="qnote">Sin atenciones ese día.</td></tr>')
       +'</tbody></table></div>'
@@ -504,11 +505,11 @@ function render(){
     const sl={activo:'Activo',reciente:'Reciente',alejado:'Alejado',inactivo:'Inactivo',alta:'Alta'}[p.status];
     const ld=p.lastAll?p.lastAll.split('-').reverse().join('-'):'—';
     const ciclo0=(p.lastIng&&p.lastIng>p.firstAll)?p.lastIng:p.firstAll;const fd=ciclo0?ciclo0.split('-').reverse().join('-'):'—';
-    const sic=p.lastIng?p.sesCiclo:(p.finAll>0?(p.finAll%12||12):0);
-    const cyc=p.lastIng?(p.nIng||1):(p.finAll>0?Math.ceil(p.finAll/12):0);
-    const pw=Math.min(100,sic/12*100).toFixed(1);
-    const pc=sic>=12?'var(--green)':sic>=6?'var(--amber)':'var(--blue)';
-    const progLabel=cyc>1?'C'+cyc+' · '+sic+'/12':sic+'/12';
+    const cmax=(p.nIng>=2)?11:12;const sic=p.lastIng?p.sesCiclo:(p.finAll>0?(p.finAll%cmax||cmax):0);
+    const cyc=p.lastIng?(p.nIng||1):(p.finAll>0?Math.ceil(p.finAll/cmax):0);
+    const pw=Math.min(100,sic/cmax*100).toFixed(1);
+    const pc=sic>=cmax?'var(--green)':sic>=Math.ceil(cmax/2)?'var(--amber)':'var(--blue)';
+    const progLabel=cyc>1?'C'+cyc+' · '+sic+'/'+cmax:sic+'/'+cmax;
     const nm=p.pac||(p.dni?'Pac. …'+String(p.dni).slice(-4):'—');
     patRows+=`<tr${p.abRisk?' style="background:#fff8f0"':''}>
       <td class="name">${nm}${p.abRisk?' <span style="color:var(--red);font-size:10px">⚠</span>':''}</td>
@@ -525,7 +526,7 @@ function render(){
   });
   h+=`<div class="card full" style="margin-bottom:18px">
     <h2>Mis pacientes en el período</h2>
-    <p class="desc">Pacientes atendidos en el período seleccionado. "Total conmigo" = sesiones históricas contigo. La barra de progreso cuenta las sesiones del ciclo actual (desde el último ingreso, evaluación 0601101) sobre 12. "Inicio ciclo" = fecha de ese ingreso; si no hay ingreso registrado, se estima desde el historial completo. "Alta" = ciclo cerrado con evaluación final 0601101. Estado según última visita real (hoy).</p>
+    <p class="desc">Pacientes atendidos en el período seleccionado. "Total conmigo" = sesiones históricas contigo. La barra de progreso cuenta las sesiones del ciclo actual (desde el último ingreso) sobre el total del ciclo: 12 para el primer ingreso (2 evaluaciones + 10 sesiones) u 11 para reingresos (1 evaluación + 10 sesiones). "Inicio ciclo" = fecha de ese ingreso; si no hay ingreso registrado, se estima desde el historial completo. "Alta" = ciclo cerrado con evaluación final 0601101. Estado según última visita real (hoy).</p>
     <div class="stat-row">
       <div class="stat-box"><div class="sv" style="color:var(--ink)">${periodPats.length}</div><div class="sl">Pacientes<br>período</div></div>
       <div class="stat-box"><div class="sv" style="color:var(--green)">${nActivo}</div><div class="sl">Activos<br>≤14 días</div></div>
@@ -540,7 +541,7 @@ function render(){
         <th>Paciente</th>
         <th class="num">Ses.<br><span style="font-weight:400;font-size:9px">período</span></th>
         <th class="num">Total conmigo<br><span style="font-weight:400;font-size:9px">histórico</span></th>
-        <th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/12 ses.</span></th>
+        <th class="num">Progreso<br><span style="font-weight:400;font-size:9px">/ciclo</span></th>
         <th class="num">Aus.<br><span style="font-weight:400;font-size:9px">período</span></th>
         <th class="num">Inicio ciclo<br><span style="font-weight:400;font-size:9px">últ. ingreso</span></th>
         <th class="num">Última visita</th>
